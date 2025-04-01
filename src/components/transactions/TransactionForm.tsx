@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 interface Transaction {
   id: number;
-  type: string;
+  type: "income" | "expense"; // Garantindo que seja um desses valores
   amount: number;
   description: string;
 }
@@ -13,6 +13,11 @@ const TransactionForm = () => {
   const [description, setDescription] = useState(""); // Descrição
   const [message, setMessage] = useState(""); // Mensagem de sucesso/erro
   const [transactions, setTransactions] = useState<Transaction[]>([]); // Lista de transações
+
+  const transactionTypeTranslation = {
+    income: "Entrada",
+    expense: "Saída",
+  };
 
   // Função para buscar transações do backend
   const fetchTransactions = async () => {
@@ -66,13 +71,13 @@ const TransactionForm = () => {
       <h2>Create Transaction</h2>
       {message && <p>{message}</p>}
       <form onSubmit={handleSubmit}>
-        <label>Type:</label>
+        <label>Tipo:</label>
         <select value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
+          <option value="income">Entrada</option>
+          <option value="expense">Despesa</option>
         </select>
 
-        <label>Amount:</label>
+        <label>Valor:</label>
         <input
           type="number"
           value={amount}
@@ -80,7 +85,7 @@ const TransactionForm = () => {
           required
         />
 
-        <label>Description:</label>
+        <label>Descrição:</label>
         <input
           type="text"
           value={description}
@@ -88,15 +93,18 @@ const TransactionForm = () => {
           required
         />
 
-        <button type="submit">Submit</button>
+        <button type="submit">Criar</button>
       </form>
 
       <h2>Transactions List</h2>
       <ul>
         {transactions.map((transaction) => (
           <li key={transaction.id}>
-            <strong>{transaction.type.toUpperCase()}</strong>: $
-            {transaction.amount} - {transaction.description}
+            <strong>
+              {transactionTypeTranslation[transaction.type] || transaction.type}
+            </strong>
+            : R$ {Number(transaction.amount).toFixed(2)} -{" "}
+            {transaction.description}
           </li>
         ))}
       </ul>
