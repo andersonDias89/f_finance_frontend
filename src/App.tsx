@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "./App.css";
+import TransactionForm from "./components/transactions/TransactionForm";
 
 function App() {
   const [message, setMessage] = useState<string>("");
@@ -15,6 +16,9 @@ function App() {
       <div>
         <h1>Conexão Django + React</h1>
         <p>{message}</p>
+      </div>
+      <div>
+        <TransactionForm />
       </div>
     </>
   );
