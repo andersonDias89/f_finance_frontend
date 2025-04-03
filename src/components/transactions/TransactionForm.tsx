@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { transactionSchema } from "../../schemas/transactionSchema";
 import { TransactionFormData } from "../../types/transactionTypes";
 import { useTransactions } from "../../hooks/useTransactions";
+import TransactionList from "./TransactionList";
 
 export default function TransactionForm() {
   const {
@@ -16,7 +17,7 @@ export default function TransactionForm() {
     resolver: zodResolver(transactionSchema),
   });
 
-  const { members, tags, transactions, addTransaction } = useTransactions();
+  const { members, tags, addTransaction } = useTransactions();
   const recurrence = watch("recurrence");
 
   // Atualiza total_installments caso a recorrência mude
@@ -113,17 +114,8 @@ export default function TransactionForm() {
 
         <button type="submit">Salvar</button>
       </form>
-
       <h2>Lista de Transações</h2>
-      <ul>
-        {transactions.map((transaction) => (
-          <li key={transaction.id}>
-            {transaction.description} - {transaction.total_amount} -{" "}
-            {transaction.member?.name || "Sem membro"} -{" "}
-            {transaction.tag?.name || "Sem tag"}
-          </li>
-        ))}
-      </ul>
+      <TransactionList />
     </div>
   );
 }
