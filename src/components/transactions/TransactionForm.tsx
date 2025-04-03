@@ -1,66 +1,22 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import axios from "axios";
-
-// Definição do schema para validação com Zod
-const transactionSchema = z
-  .object({
-    due_date: z.string().nonempty("Data de vencimento é obrigatória"),
-    description: z.string().nonempty("Descrição é obrigatória"),
-    total_amount: z.coerce.number().positive("O valor deve ser positivo"),
-    type: z.enum(["income", "expense"], {
-      required_error: "Tipo é obrigatório",
-    }),
-    recurrence: z.enum(["one_time", "recurring", "installment"], {
-      required_error: "Recorrência é obrigatória",
-    }),
-    total_installments: z.number().optional(),
-    member: z.string().nonempty("Membro é obrigatório"),
-    tag: z.string().nonempty("Tag é obrigatória"),
-  })
-  .refine(
-    (data) => {
-      if (
-        data.recurrence === "installment" &&
-        (!data.total_installments || data.total_installments <= 0)
-      ) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Número de parcelas é obrigatório para pagamentos parcelados.",
-      path: ["total_installments"],
-    }
-  );
-
-type TransactionFormData = z.infer<typeof transactionSchema>;
-type FamilyMember = { id: string; name: string };
-type Tag = { id: string; name: string };
-type Transaction = {
-  id: string;
-  description: string;
-  total_amount: number;
-  type: "income" | "expense";
-  recurrence: "one_time" | "recurring" | "installment";
-  status: "pending" | "posted" | "cleared";
-  member: FamilyMember;
-  tag: Tag;
-};
+import { transactionSchema } from "../../schemas/transactionSchema";
+import { TransactionFormData } from "../../types/transactionTypes";
+import { useTransactions } from "../../hooks/useTransactions";
 
 export default function TransactionForm() {
   const {
     register,
     handleSubmit,
-    setValue,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
   });
 
+  const { members, tags, transactions, addTransaction } = useTransactions();
   const recurrence = watch("recurrence");
 
   // Atualiza total_installments caso a recorrência mude
@@ -70,83 +26,36 @@ export default function TransactionForm() {
     }
   }, [recurrence, setValue]);
 
-  const [members, setMembers] = useState<FamilyMember[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const response = await axios.get<Transaction[]>(
-          "http://127.0.0.1:8000/api/transactions/"
-        );
-        setTransactions(response.data);
-      } catch (error) {
-        console.error("Erro ao buscar transações:", error);
-      }
-    };
-
-    fetchTransactions();
-  }, []);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [membersRes, tagsRes] = await Promise.all([
-          axios.get<FamilyMember[]>(
-            "http://127.0.0.1:8000/api/family-members/"
-          ),
-          axios.get<Tag[]>("http://127.0.0.1:8000/api/tags/"),
-        ]);
-
-        console.log("Membros recebidos:", membersRes.data);
-        console.log("Tags recebidas:", tagsRes.data);
-
-        setMembers(membersRes.data);
-        setTags(tagsRes.data);
-      } catch (error) {
-        console.error("Erro ao buscar dados", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
   const onSubmit = async (data: TransactionFormData) => {
+    console.log("Dados enviados:", data);
+
     try {
-      console.log("Dados enviados:", data);
-
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/transactions/",
-        data
-      );
-
-      console.log("Resposta da API:", response.data);
+      await addTransaction({
+        ...data,
+        member: data.member, // Mantém apenas o ID
+        tag: data.tag, // Mantém apenas o ID
+      });
 
       alert("Transação criada com sucesso!");
     } catch (error) {
-      console.error("Erro ao criar transação", error);
-      alert("Erro ao criar transação");
+      alert("Erro ao criar transação. Veja o console.");
+      console.error(error);
     }
   };
-
-  if (loading) return <p>Carregando...</p>;
 
   return (
     <div>
       <form onSubmit={handleSubmit(onSubmit)}>
         <label>Descrição:</label>
         <input {...register("description")} />
-        {errors.description && <p>{errors.description.message}</p>}
+        <p>{errors.description?.message}</p>
 
         <label>Valor:</label>
         <input
           type="number"
           {...register("total_amount", { valueAsNumber: true })}
         />
-        {errors.total_amount && <p>{errors.total_amount.message}</p>}
+        <p>{errors.total_amount?.message}</p>
 
         <label>Data de Vencimento:</label>
         <input type="date" {...register("due_date")} />
@@ -169,6 +78,17 @@ export default function TransactionForm() {
         </select>
         <p>{errors.recurrence?.message}</p>
 
+        {recurrence === "installment" && (
+          <>
+            <label>Total de Parcelas:</label>
+            <input
+              type="number"
+              {...register("total_installments", { valueAsNumber: true })}
+            />
+            <p>{errors.total_installments?.message}</p>
+          </>
+        )}
+
         <label>Membro:</label>
         <select {...register("member")}>
           <option value="">Selecione um membro</option>
@@ -178,15 +98,7 @@ export default function TransactionForm() {
             </option>
           ))}
         </select>
-        {errors.member && <p>{errors.member.message}</p>}
-
-        <label>Total de Parcelas:</label>
-        <input
-          type="number"
-          {...register("total_installments", { valueAsNumber: true })}
-          disabled={recurrence !== "installment"}
-        />
-        <p>{errors.total_installments?.message}</p>
+        <p>{errors.member?.message}</p>
 
         <label>Tag:</label>
         <select {...register("tag")}>
@@ -197,7 +109,7 @@ export default function TransactionForm() {
             </option>
           ))}
         </select>
-        {errors.tag && <p>{errors.tag.message}</p>}
+        <p>{errors.tag?.message}</p>
 
         <button type="submit">Salvar</button>
       </form>
