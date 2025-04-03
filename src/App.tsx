@@ -1,16 +1,16 @@
-import "./App.css";
-import TransactionForm from "./components/transactions/TransactionForm";
-import TransactionList from "./components/transactions/TransactionList";
+// src/App.tsx
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Transactions from "./pages/Transactions";
 import { TransactionsProvider } from "./context/TransactionContext";
 
 function App() {
   return (
     <TransactionsProvider>
-      <div>
-        <h1>Gerenciamento de Transações</h1>
-        <TransactionForm />
-        <TransactionList />
-      </div>
+      <Router>
+        <Routes>
+          <Route path="/movimentacoes" element={<Transactions />} />
+        </Routes>
+      </Router>
     </TransactionsProvider>
   );
 }
