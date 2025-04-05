@@ -1,16 +1,22 @@
 import { useTransactions } from "../../hooks/useTransactions";
+import GenericTable from "../Table/GenericTable";
 import {
-  Table,
-  TableHead,
-  TableHeader,
-  TableBody,
-  TableRow,
   TableData,
   TypeData,
   StatusCell,
-} from "./TransactionsList.styles";
+} from "../../components/Table/GenericTable.styles"; // ou onde você mantiver
 
-// Labels traduzidos para exibir no status
+const headers = [
+  "Vencimento",
+  "Descrição",
+  "Valor",
+  "Tipo",
+  "Recorrência",
+  "Status",
+  "Membro",
+  "Tag",
+];
+
 function getStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     pending: "Pendente",
@@ -24,39 +30,27 @@ export default function TransactionList() {
   const { transactions } = useTransactions();
 
   return (
-    <Table>
-      <TableHead>
-        <tr>
-          <TableHeader>Vencimento</TableHeader>
-          <TableHeader>Descrição</TableHeader>
-          <TableHeader>Valor</TableHeader>
-          <TableHeader>Tipo</TableHeader>
-          <TableHeader>Recorrência</TableHeader>
-          <TableHeader>Status</TableHeader>
-          <TableHeader>Membro</TableHeader>
-          <TableHeader>Tag</TableHeader>
-        </tr>
-      </TableHead>
-      <TableBody>
-        {transactions.map((transaction) => (
-          <TableRow key={transaction.id}>
-            <TableData>{transaction.due_date}</TableData>
-            <TableData>{transaction.description}</TableData>
-            <TableData>{transaction.total_amount}</TableData>
-            <TypeData $type={transaction.type}>
-              {transaction.type === "income" ? "Receita" : "Despesa"}
-            </TypeData>
-            <TableData>{transaction.recurrence}</TableData>
-            <StatusCell
-              $status={transaction.status as "pending" | "posted" | "cleared"}
-            >
-              {getStatusLabel(transaction.status)}
-            </StatusCell>
-            <TableData>{transaction.member_detail?.name}</TableData>
-            <TableData>{transaction.tag_detail?.name}</TableData>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <GenericTable
+      headers={headers}
+      data={transactions}
+      renderRow={(transaction) => (
+        <>
+          <TableData>{transaction.due_date}</TableData>
+          <TableData>{transaction.description}</TableData>
+          <TableData>{transaction.total_amount}</TableData>
+          <TypeData $type={transaction.type}>
+            {transaction.type === "income" ? "Receita" : "Despesa"}
+          </TypeData>
+          <TableData>{transaction.recurrence}</TableData>
+          <StatusCell
+            $status={transaction.status as "pending" | "posted" | "cleared"}
+          >
+            {getStatusLabel(transaction.status)}
+          </StatusCell>
+          <TableData>{transaction.member_detail?.name}</TableData>
+          <TableData>{transaction.tag_detail?.name}</TableData>
+        </>
+      )}
+    />
   );
 }
